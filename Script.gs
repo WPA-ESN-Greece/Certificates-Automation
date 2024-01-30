@@ -14,6 +14,8 @@ const Certficate_Template_Slide_URL = "https://docs.google.com/presentation/d/1T
   const Event_Year = SettingsSheet.getRange("B15").getValue()
   const Event_Place = SettingsSheet.getRange("B18").getValue()
 
+  const Cerificates_Folder_URL = SettingsSheet.getRange("D9").getValue()
+
   const Event_Participating_Act = SettingsSheet.getRange("D3").getValue()
   const Event_Appreciation_Act = SettingsSheet.getRange("D4").getValue()
 
@@ -24,15 +26,24 @@ const Certficate_Template_Slide_URL = "https://docs.google.com/presentation/d/1T
 function getYourTemplateCopy()
 {
   // Creates your copy of the Template. 
-  let your_Certificate_Template_URL = DriveApp.getFileById(extractDocumentIdFromUrl(Certficate_Template_Slide_URL)).makeCopy(Event_Name + " Certificate Template", spredsheetParentFolder).getUrl()
+  let your_Certificate_Template_URL = DriveApp.getFileById(extractDocumentIdFromUrl(Certficate_Template_Slide_URL)).makeCopy(Event_Name + " " + Event_Year + " Certificate Template", spredsheetParentFolder).getUrl()
 
   SettingsSheet.getRange("D15").setValue(your_Certificate_Template_URL)
 }
 
 function generateParticipantsCertificates()
 { 
+let certificatesFolder
 
-  let certificatesFolder = createNewFolder(spredsheetParentFolder.getId(), Event_Name + " Certificates")
+  if (Cerificates_Folder_URL == "")
+  {
+    certificatesFolder = createNewFolder(spredsheetParentFolder.getId(), Event_Name + " " + Event_Year + " Certificates")
+  }
+  else 
+  {
+    certificatesFolder = DriveApp.getFolderById(extractDocumentIdFromUrl(Cerificates_Folder_URL))
+  }
+  
   let your_Certificate_Template_ID = extractDocumentIdFromUrl(SettingsSheet.getRange("D15").getValue())
 
   SettingsSheet.getRange("D21").setValue(certificatesFolder.getUrl())
@@ -77,7 +88,7 @@ function generateParticipantsCertificates()
         // Creates Cerificate and Replaces text for each participant. 
         let Current_Folder = DriveApp.getFolderById(Current_FolderID.getId())
 
-        let currentCertificateID = DriveApp.getFileById(your_Certificate_Template_ID).makeCopy(index+1 + "." + fullName + " " + Event_Name + " Certificate", Current_Folder).getId()
+        let currentCertificateID = DriveApp.getFileById(your_Certificate_Template_ID).makeCopy(index+1 + "." + fullName + " " + Event_Name + " " + Event_Year + " Certificate", Current_Folder).getId()
 
         let currentCertificate_Slide = SlidesApp.openById(currentCertificateID)
 
@@ -97,7 +108,7 @@ function generateParticipantsCertificates()
         currentCertificate_Slide.saveAndClose()
 
         let cerificate_PDF = DriveApp.getFileById(currentCertificate_Slide.getId()).getBlob().getAs(MimeType.PDF)
-        let PDF = Current_Folder.createFile(cerificate_PDF).setName(fullName + " - " + Event_Name + " Certificate")
+        let PDF = Current_Folder.createFile(cerificate_PDF).setName(fullName + " - " + Event_Name + " " + Event_Year + " Certificate")
         let pdfUrl = PDF.getUrl()
         DataSheet.getRange(index +2, 9).setValue(pdfUrl) 
 
@@ -107,7 +118,7 @@ function generateParticipantsCertificates()
 
         if (emailAddress)
         {
-          emailsCertificate(emailAddress, Event_Name, firstName, lastName, PDF, index+2) 
+          emailsCertificate(emailAddress, Event_Name + " " + Event_Year, firstName, lastName, PDF, index+2) 
         }
       }
     })
@@ -122,8 +133,7 @@ function emailsCertificate(_emailAddress,_eventName,_firstName,_lastName,_pdf,_i
       var message = {
         to: _emailAddress,
         subject: `${_eventName} Certficate for ${_eventName}`,
-        body: `Hello ${_firstName} ${_lastName},\n
-        This is your certificate for ${_eventName}.`,
+        body: `Hello ${_firstName} ${_lastName},\nThis is your certificate for ${_eventName}.`,
         name: _eventName,
         attachments: [_pdf]
       }
